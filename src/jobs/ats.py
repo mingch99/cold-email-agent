@@ -40,7 +40,18 @@ _POSITIVE = [
     "site reliability engineer", "mobile engineer", "ios engineer",
     "android engineer", "web developer", "member of technical staff",
     "applications developer", "programmer",
+    # Data / ML track (owner targets DE first, then ML/MLE, Applied DS)
+    "data platform engineer", "data infrastructure engineer", "big data engineer",
+    "analytics engineer", "business intelligence engineer", "bi engineer",
+    "etl developer", "data developer",
+    "machine learning", "ai engineer", "ai/ml engineer", "ml/ai engineer",
+    "mlops", "ml ops", "ml platform", "ml infrastructure",
+    "data scientist",
 ]
+# Search phrases sent to ATS boards that need a query string (Workday, Amazon).
+# One request set per phrase; results are de-duplicated by job_id.
+_SEARCH_QUERIES = ["software engineer", "data engineer",
+                   "machine learning engineer", "data scientist"]
 _JUNIOR = ["new grad", "new-grad", "university grad", "early career",
            "early-career", "entry level", "entry-level", "associate",
            " i ", " i,", " i("]
@@ -51,7 +62,9 @@ _SENIOR = ["senior", "staff", "principal", " lead", "lead ", "manager",
 _NONSOFTWARE = ["technical support", "support engineer", "sales engineer",
                 "field service", "hardware", "mechanical", "electrical",
                 "civil", "structural", "propulsion", "aerospace", "aerodynamic",
-                "facilities", "validation", "manufacturing", "in training",
+                # "manufacturing" intentionally NOT here: owner wants
+                # manufacturing data/ML/software roles (e.g. factory data teams).
+                "facilities", "validation", "in training",
                 "chemical", "biomedical", "optical", "materials",
                 # talent-pool / pipeline postings that aren't real openings
                 "talent community", "talent network", "talent pool",
@@ -314,7 +327,7 @@ def _workable_name(slug: str) -> str | None:
 # Workday has no name search and every company has a unique
 # tenant/pod/site, so the "slug" here is a composite "tenant|pod|site".
 # Endpoint: https://{tenant}.{pod}.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs
-def _workday(slug: str) -> list[dict]:
+def _workday_query(slug: str, query: str) -> list[dict]:
     try:
         tenant, pod, site = slug.split("|")
     except ValueError:
@@ -327,7 +340,7 @@ def _workday(slug: str) -> list[dict]:
         try:
             r = requests.post(api, timeout=TIMEOUT,
                               headers={"Content-Type": "application/json", "Accept": "application/json"},
-                              json={"limit": 20, "offset": offset, "searchText": "software engineer",
+                              json={"limit": 20, "offset": offset, "searchText": query,
                                     "appliedFacets": {}})
             if r.status_code != 200:
                 break
@@ -366,7 +379,7 @@ def _amazon_date(s: str) -> str:
         return ""
 
 
-def _amazon(slug: str = "amazon") -> list[dict]:
+def _amazon_query(query: str) -> list[dict]:
     base = "https://www.amazon.jobs"
     out = []
     for offset in range(0, 500, 100):  # a few pages of the freshest roles
@@ -374,7 +387,7 @@ def _amazon(slug: str = "amazon") -> list[dict]:
             r = requests.get(
                 f"{base}/en/search.json", timeout=TIMEOUT,
                 headers={"User-Agent": _UA},
-                params={"base_query": "software engineer", "country": "USA",
+                params={"base_query": query, "country": "USA",
                         "sort": "recent", "result_limit": 100, "offset": offset})
             if r.status_code != 200:
                 break
@@ -395,6 +408,27 @@ def _amazon(slug: str = "amazon") -> list[dict]:
                 "description": _strip_html(j.get("description", "")),
             })
     return out
+
+
+def _dedup_queries(fn, *args) -> list[dict]:
+    """Run a query-based fetcher once per _SEARCH_QUERIES phrase; dedupe by job_id."""
+    seen, out = set(), []
+    for q in _SEARCH_QUERIES:
+        for j in fn(*args, q):
+            key = j.get("job_id") or j.get("url")
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(j)
+    return out
+
+
+def _workday(slug: str) -> list[dict]:
+    return _dedup_queries(_workday_query, slug)
+
+
+def _amazon(slug: str = "amazon") -> list[dict]:
+    return _dedup_queries(_amazon_query)
 
 
 _PROVIDERS = {"greenhouse": _greenhouse, "lever": _lever,

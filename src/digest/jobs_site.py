@@ -90,7 +90,7 @@ _PAGE = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fresh SWE Roles · __COUNT__</title>
+<title>Fresh Data/ML/SWE Roles · __COUNT__</title>
 <meta name="description" content="Entry-level software engineer roles at verified H-1B sponsors, refreshed daily.">
 <meta name="color-scheme" content="dark light">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='45' font-family='Arial,Helvetica,sans-serif' font-size='30' font-weight='800' fill='white' text-anchor='middle'%3EH1%3C/text%3E%3C/svg%3E">
@@ -309,8 +309,8 @@ _PAGE = """<!DOCTYPE html>
 <div class="wrap">
 
   <div class="eyebrow">H-1B sponsor job board · updated __DATE__</div>
-  <h1>Fresh SWE roles, <span class="accent">every day</span></h1>
-  <p class="sub">Entry-level &amp; early-career software engineer roles pulled from the
+  <h1>Fresh Data, ML &amp; SWE roles, <span class="accent">every day</span></h1>
+  <p class="sub">Entry-level &amp; early-career data engineering, ML, and software roles pulled from the
     public boards of verified H-1B sponsors — Greenhouse, Lever, Ashby, SmartRecruiters, Workable &amp; Workday. US-only.</p>
   <div class="stats" id="stats"></div>
 

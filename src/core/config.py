@@ -98,11 +98,11 @@ COVER_LETTER_PATH = _abspath(_optional("COVER_LETTER_PATH", "assets/cover_letter
 JOB_MAX_AGE_HOURS = int(_optional("JOB_MAX_AGE_HOURS", "24"))
 MAX_JOBS_PER_RUN = int(_optional("MAX_JOBS_PER_RUN", "10"))
 JOB_SEARCH_TERMS = [
+    "data engineer",
+    "machine learning engineer",
+    "data scientist",
+    "analytics engineer",
     "software engineer",
-    "software developer",
-    "backend engineer",
-    "full stack engineer",
-    "frontend engineer",
 ]
 JOB_LOCATIONS = ["United States"]
 
@@ -123,6 +123,7 @@ YOUR_EMAIL_PRIMARY = _optional("YOUR_EMAIL_PRIMARY", SENDER_EMAIL)
 YOUR_EMAIL_ALT = _optional("YOUR_EMAIL_ALT", "")
 YOUR_BIO = _optional(
     "YOUR_BIO",
-    "a new grad software engineer with experience in Python, JavaScript, "
-    "and cloud technologies, seeking entry-level SWE roles",
+    "a Georgia Tech M.S. CSE student (May 2027) with 4 years of data and ML "
+    "engineering experience at TSMC and Syntec, seeking Data Engineer and "
+    "ML Engineer roles",
 )

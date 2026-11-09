@@ -88,9 +88,10 @@ _SKILLS = [
     "api", "microservice", "socket", "data", "platform", "web",
 ]
 # Résumé's strongest themes → a title hit on any of these boosts fit.
-_STRENGTHS = ["software engineer", "software developer", "backend", "full stack",
-              "fullstack", "full-stack", "ai", "ml", "machine learning", "data",
-              "platform", "cloud", "distributed", "web", "api"]
+_STRENGTHS = ["data engineer", "machine learning", "ml engineer", "mlops",
+              "data platform", "analytics engineer", "data scientist", "etl",
+              "manufacturing", "ai", "ml", "data", "platform",
+              "software engineer", "backend", "full stack", "full-stack"]
 # Off-profile domains → a title hit here means a poor fit for this candidate.
 _OFFFIT = ["embedded", "firmware", "hardware", "fpga", "asic", "mainframe",
            "nonstop", "cobol", "kernel", "driver", "device", "rf ", "analog",
@@ -159,7 +160,7 @@ def keyword_fit(title: str, company: str = "", jd: str = "") -> tuple[int, str]:
         hits.append(f"{req}+ yrs req")
 
     score = max(5, min(96, score))
-    reason = "keyword: " + (", ".join(dict.fromkeys(hits)) if hits else "generic SWE role")
+    reason = "keyword: " + (", ".join(dict.fromkeys(hits)) if hits else "generic data/ML/SWE role")
     return score, reason[:80]
 
 
