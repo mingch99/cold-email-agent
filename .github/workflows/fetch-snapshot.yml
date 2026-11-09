@@ -1,0 +1,48 @@
+name: Job snapshot (fetch only)
+
+# Pulls current roles and commits data/snapshot.csv. No email, no site rebuild,
+# no secrets needed. Runs when this workflow or the script changes, or by hand.
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - ".github/workflows/fetch-snapshot.yml"
+      - "scripts/fetch_snapshot.py"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch-snapshot
+  cancel-in-progress: true
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pypdf
+
+      - name: Fetch snapshot
+        env:
+          SENDER_EMAIL: snapshot@example.com
+          DRY_RUN: "true"
+        run: python -m scripts.fetch_snapshot
+
+      - name: Commit snapshot
+        run: |
+          git config user.name "snapshot-bot"
+          git config user.email "snapshot-bot@users.noreply.github.com"
+          git add data/snapshot.csv
+          git diff --cached --quiet || git commit -m "Job snapshot $(date -u +%F) [skip ci]"
+          git pull --rebase origin main
+          git push
