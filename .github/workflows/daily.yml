@@ -39,9 +39,12 @@ jobs:
           EOF
 
       - name: Write resume text for fit ranking
+        # Pass through an env var so "$" and quotes in the resume are not expanded by bash.
+        env:
+          RESUME_TEXT: ${{ secrets.RESUME_TEXT }}
         run: |
           mkdir -p assets
-          printf '%s' "${{ secrets.RESUME_TEXT }}" > assets/resume.txt
+          printf '%s' "$RESUME_TEXT" > assets/resume.txt
 
       - name: Run daily workflow (site + top-10 email)
         run: python -m src.digest.daily_workflow --to ${{ secrets.DIGEST_TO }}
