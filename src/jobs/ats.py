@@ -30,24 +30,40 @@ _UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 # Must contain an actual SOFTWARE role keyword. Bare "engineer i" is NOT here
 # on purpose — it matched mechanical / propulsion / civil / hardware "Engineer I"
 # roles (e.g. Relativity Space, LG). We require a software-specific title.
-_POSITIVE = [
-    "software engineer", "software developer", "software development engineer",
-    "swe", "backend engineer", "back end engineer", "back-end engineer",
-    "frontend engineer", "front end engineer", "front-end engineer",
-    "full stack engineer", "fullstack engineer", "full-stack engineer",
-    "data engineer", "machine learning engineer", "ml engineer",
-    "platform engineer", "infrastructure engineer", "devops engineer",
-    "site reliability engineer", "mobile engineer", "ios engineer",
-    "android engineer", "web developer", "member of technical staff",
-    "applications developer", "programmer",
-    # Data / ML track (owner targets DE first, then ML/MLE, Applied DS)
-    "data platform engineer", "data infrastructure engineer", "big data engineer",
-    "analytics engineer", "business intelligence engineer", "bi engineer",
-    "etl developer", "data developer",
-    "machine learning", "ai engineer", "ai/ml engineer", "ml/ai engineer",
-    "mlops", "ml ops", "ml platform", "ml infrastructure",
+# Data / ML / DS titles: always kept (subject to seniority and reject lists).
+_DATA_ROLES = [
+    "data engineer", "data platform engineer", "data infrastructure engineer",
+    "big data engineer", "analytics engineer", "business intelligence engineer",
+    "bi engineer", "etl developer", "data developer",
+    "machine learning", "ml engineer", "ai engineer", "ai/ml engineer",
+    "ml/ai engineer", "mlops", "ml ops", "ml platform", "ml infrastructure",
     "data scientist",
 ]
+# Generic software titles: kept ONLY when the title also carries a data-leaning
+# qualifier (_DATA_QUALIFIERS) or is an explicit new-grad / early-career role.
+_SWE_TITLES = [
+    "software engineer", "software developer", "software development engineer",
+    "swe", "sde", "backend engineer", "back end engineer", "back-end engineer",
+    "full stack engineer", "fullstack engineer", "full-stack engineer",
+    "platform engineer", "infrastructure engineer", "member of technical staff",
+]
+_DATA_QUALIFIERS = [
+    "data", " ml", "ml ", "machine learning", " ai", "ai ", "a.i.", "llm",
+    "platform", "infrastructure", "infra", "backend", "back end", "back-end",
+    "distributed", "database", "storage", "analytics", "pipeline", "etl",
+    "streaming", "search", "inference", "training",
+    "manufacturing", "factory", "robotics", "autonomy", "autonomous",
+    "perception", "simulation", "sensor", "iot", "industrial",
+]
+# Off-target software areas: rejected even if a qualifier is present.
+_OFF_TARGET = [
+    "frontend", "front end", "front-end", " ios ", " ios,", " ios/", "(ios",
+    "android", "mobile",
+    "web developer", "game", "gameplay", "ui engineer", "ux ",
+    "embedded", "firmware",
+]
+# Kept for backward compatibility with any code that imports _POSITIVE.
+_POSITIVE = _DATA_ROLES + _SWE_TITLES
 # Search phrases sent to ATS boards that need a query string (Workday, Amazon).
 # One request set per phrase; results are de-duplicated by job_id.
 _SEARCH_QUERIES = ["software engineer", "data engineer",
@@ -81,14 +97,20 @@ def is_explicit_junior(title: str) -> bool:
 
 
 def is_junior_swe(title: str) -> bool:
-    """An entry-to-early-career SWE role: a software title that is NOT senior.
+    """An entry-to-early-career data / ML / data-leaning SWE role that is NOT senior.
 
     Includes plain titles (no level word), explicit new-grad/entry/I, and level
     II roles, while still excluding Senior/Staff/Principal/Lead/Manager and III+.
     """
     t = f" {title.lower().strip()} "
-    if not any(p in t for p in _POSITIVE):
+    if any(o in t for o in _OFF_TARGET):
         return False
+    if not any(d in t for d in _DATA_ROLES):
+        # Generic SWE title: keep only data-leaning or explicit new-grad roles.
+        if not any(p in t for p in _SWE_TITLES):
+            return False
+        if not (any(q in t for q in _DATA_QUALIFIERS) or is_explicit_junior(title)):
+            return False
     if any(s in t for s in _SENIOR):
         return False
     if any(n in t for n in _NONSOFTWARE):
