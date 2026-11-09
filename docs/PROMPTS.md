@@ -24,9 +24,9 @@ FIRST find the company's email pattern ONLINE
 (web search / known formats) and use that to construct the addresses. Only if I
 tell you the pattern is wrong (bounces), spend ONE Prospeo reveal to determine
 the correct pattern, then reconstruct the rest from it. Draft a ~100–120 word
-tailored email per person, lead with UC Berkeley CS + Genuine Parts Company
-(Fortune 200), tie my resume to this JD, sign with both emails (gmail +
-berkeley), no GitHub. SHOW me every draft and WAIT — do not send until I say
+tailored email per person, lead with Georgia Tech M.S. CSE + 4 years of data/ML
+engineering at TSMC and Syntec, tie my resume to this JD using only facts in
+assets/experience.json, sign with email, LinkedIn and GitHub. SHOW me every draft and WAIT — do not send until I say
 "send".
 ```
 
