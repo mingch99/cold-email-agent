@@ -123,6 +123,10 @@ def main() -> None:
     # their full JD (years-of-experience aware) and persisted; older roles reuse
     # their stored score. The site build and the email both read these.
     jobs = fit_ranker.score_daily(jobs)
+    before = len(jobs)
+    jobs = [j for j in jobs if not j.get("too_senior")]
+    print(f"  Dropped {before - len(jobs)} role(s) requiring more than "
+          f"{fit_ranker.MAX_YEARS_REQUIRED} years of experience")
 
     email_ok = email_top10(jobs, args.to, args.dry_run)
     site_ok = rebuild_site(jobs)

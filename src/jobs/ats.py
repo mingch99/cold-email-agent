@@ -56,7 +56,8 @@ _JUNIOR = ["new grad", "new-grad", "university grad", "early career",
            "early-career", "entry level", "entry-level", "associate",
            " i ", " i,", " i("]
 _SENIOR = ["senior", "staff", "principal", " lead", "lead ", "manager",
-           "director", " ii", " iii", " iv", " 2", " 3", " 4", "sr.", "sr ",
+           # Level II / 2 is allowed: owner has ~4 YOE and targets roles needing <=3 yrs.
+           "director", " iii", " iv", " 3", " 4", "sr.", "sr ",
            " l3", " l4", " l5", " l6", "distinguished", "architect", "head of"]
 # Extra safety: reject non-software disciplines even if a keyword sneaks in.
 _NONSOFTWARE = ["technical support", "support engineer", "sales engineer",
@@ -82,9 +83,8 @@ def is_explicit_junior(title: str) -> bool:
 def is_junior_swe(title: str) -> bool:
     """An entry-to-early-career SWE role: a software title that is NOT senior.
 
-    Loosened for ~1 YOE — includes plain 'Software Engineer' (no level word) and
-    explicit new-grad/entry/I roles, while still excluding Senior/Staff/Principal/
-    Lead/Manager and II/III+ levels.
+    Includes plain titles (no level word), explicit new-grad/entry/I, and level
+    II roles, while still excluding Senior/Staff/Principal/Lead/Manager and III+.
     """
     t = f" {title.lower().strip()} "
     if not any(p in t for p in _POSITIVE):

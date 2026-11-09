@@ -106,7 +106,10 @@ def _resume_skills() -> frozenset[str]:
     return frozenset(s for s in _SKILLS if s in r)
 
 
-# The candidate is early-career (~1-2 yrs). A role demanding materially more
+# Max years of experience a JD may require before the role is dropped.
+MAX_YEARS_REQUIRED = 3
+
+# The candidate targets roles requiring <= MAX_YEARS_REQUIRED years. A role demanding materially more
 # experience is a poor fit even if the title looks junior — but the "N+ years"
 # requirement lives in the JD body, so this only fires when a JD is provided.
 def _years_required(jd: str) -> int | None:
@@ -153,10 +156,10 @@ def keyword_fit(title: str, company: str = "", jd: str = "") -> tuple[int, str]:
     if any(o in t for o in _OFFFIT):
         score -= 24; hits.append("off-stack")
 
-    # years-of-experience gate (JD only): 3y −6, 4y −14, 5y+ −24
+    # years-of-experience gate (JD only): 4y −14, 5y+ −24 (<=3y is in range)
     req = _years_required(jd)
-    if req is not None and req >= 3:
-        score -= 6 if req == 3 else 14 if req == 4 else 24
+    if req is not None and req > MAX_YEARS_REQUIRED:
+        score -= 14 if req == 4 else 24
         hits.append(f"{req}+ yrs req")
 
     score = max(5, min(96, score))
@@ -230,6 +233,13 @@ def _ensure_score_cols(conn) -> None:
         conn.execute("ALTER TABLE seen_jobs ADD COLUMN fit_reason TEXT")
     if "no_sponsor" not in cols:
         conn.execute("ALTER TABLE seen_jobs ADD COLUMN no_sponsor INTEGER DEFAULT 0")
+    if "yrs_req" not in cols:
+        conn.execute("ALTER TABLE seen_jobs ADD COLUMN yrs_req INTEGER")
+
+
+def too_senior(yrs: int | None) -> bool:
+    """True when a JD demands more years than MAX_YEARS_REQUIRED."""
+    return yrs is not None and yrs > MAX_YEARS_REQUIRED
 
 
 def _seen_key(j: dict) -> str:
@@ -255,9 +265,9 @@ def score_daily(jobs: list[dict], db_path: str | None = None) -> list[dict]:
     conn = h1b_db.connect(db_path)
     conn.execute(_SEEN_MIN_SCHEMA)
     _ensure_score_cols(conn)
-    stored = {r["job_key"]: (r["fit_score"], r["fit_reason"], r["no_sponsor"])
+    stored = {r["job_key"]: (r["fit_score"], r["fit_reason"], r["no_sponsor"], r["yrs_req"])
               for r in conn.execute(
-                  "SELECT job_key, fit_score, fit_reason, no_sponsor FROM seen_jobs")}
+                  "SELECT job_key, fit_score, fit_reason, no_sponsor, yrs_req FROM seen_jobs")}
 
     # new postings that still need a JD-based score → fetch their JDs in parallel
     todo = [j for j in jobs
@@ -278,14 +288,18 @@ def score_daily(jobs: list[dict], db_path: str | None = None) -> list[dict]:
         if s and s[0] is not None:                       # seen before → reuse
             j["fit_score"], j["fit_reason"] = int(s[0]), s[1] or ""
             j["no_sponsorship"] = bool(s[2])
+            j["yrs_req"] = s[3]
+            j["too_senior"] = too_senior(s[3])
         elif j.get("is_new"):                             # new today → JD score
             jd = j.get("_jd", "")
             j["no_sponsorship"] = says_no_sponsorship(jd)
+            j["yrs_req"] = _years_required(jd)
+            j["too_senior"] = too_senior(j["yrs_req"])
             sc, reason = _score_one(j["title"], j["company"], jd, resume)
             j["fit_score"], j["fit_reason"] = sc, reason
             updates.append((k, j.get("first_seen", ""), j["title"], j["company"],
                             j["ats"], j.get("url", ""), sc, reason,
-                            1 if j["no_sponsorship"] else 0))
+                            1 if j["no_sponsorship"] else 0, j["yrs_req"]))
         else:                                             # pre-existing, unscored
             j["fit_score"], j["fit_reason"] = keyword_fit(j["title"], j["company"])
             j["no_sponsorship"] = False
@@ -296,10 +310,11 @@ def score_daily(jobs: list[dict], db_path: str | None = None) -> list[dict]:
         # insert it if not so score_daily is correct even called on its own.
         conn.executemany(
             "INSERT INTO seen_jobs "
-            "(job_key, first_seen, title, company, ats, url, fit_score, fit_reason, no_sponsor) "
-            "VALUES (?,?,?,?,?,?,?,?,?) "
+            "(job_key, first_seen, title, company, ats, url, fit_score, fit_reason, no_sponsor, yrs_req) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(job_key) DO UPDATE SET fit_score=excluded.fit_score, "
-            "fit_reason=excluded.fit_reason, no_sponsor=excluded.no_sponsor",
+            "fit_reason=excluded.fit_reason, no_sponsor=excluded.no_sponsor, "
+            "yrs_req=excluded.yrs_req",
             updates)
         conn.commit()
     conn.close()
@@ -327,6 +342,9 @@ def enrich(jobs: list[dict], limit: int = 40, drop_no_sponsorship: bool = True) 
     for j in head:
         if drop_no_sponsorship and says_no_sponsorship(j.get("_jd", "")):
             j["dropped_no_sponsorship"] = True
+            continue
+        if too_senior(_years_required(j.get("_jd", ""))):
+            j["dropped_too_senior"] = True
             continue
         kept.append(j)
 
